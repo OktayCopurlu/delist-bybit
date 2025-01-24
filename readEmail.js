@@ -2,16 +2,29 @@ const fs = require("fs");
 const readline = require("readline");
 const { google } = require("googleapis");
 const { placeOrder } = require("./placeOrder");
+const path = require("path");
+require("dotenv").config();
 
 // If modifying these SCOPES, delete token.json.
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 const TOKEN_PATH = "token.json";
 
-// Load client secrets from a local file.
-fs.readFile("credentials.json", (err, content) => {
-  if (err) return console.log("Error loading client secret file:", err);
-  authorize(JSON.parse(content), listMessages);
-});
+const credentialsPath = path.join(__dirname, "credentials.json");
+let credentials = fs.readFileSync(credentialsPath, "utf8");
+
+credentials = credentials
+  .replace(/\${CLIENT_ID}/g, process.env.CLIENT_ID)
+  .replace(/\${PROJECT_ID}/g, process.env.PROJECT_ID)
+  .replace(/\${AUTH_URI}/g, process.env.AUTH_URI)
+  .replace(/\${TOKEN_URI}/g, process.env.TOKEN_URI)
+  .replace(/\${AUTH_PROVIDER_CERT_URL}/g, process.env.AUTH_PROVIDER_CERT_URL)
+  .replace(/\${CLIENT_SECRET}/g, process.env.CLIENT_SECRET)
+  .replace(/\${REDIRECT_URIS}/g, process.env.REDIRECT_URIS);
+
+const credentialsJson = JSON.parse(credentials);
+
+// Now you can use credentialsJson as needed
+console.log(credentialsJson);
 
 function authorize(credentials, callback) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
@@ -108,5 +121,8 @@ function getMessage(auth, messageId) {
     }
   );
 }
+
+// Call the authorize function with the parsed credentials and listMessages as the callback
+authorize(credentialsJson, listMessages);
 
 module.exports = { listMessages };

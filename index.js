@@ -32,6 +32,32 @@ app.use(express.json());
 //   const response = placeOrder(signal);
 // }
 
+app.post("/webhook", (req, res) => {
+  const message = req.body;
+  console.log("webhook", message);
+  if (message) {
+    const data = Buffer.from(message.data, "base64").toString("utf-8");
+    console.log("Received message:", data);
+
+    // Process the message data
+    // For example, check for "Delisting of" in the subject and place an order
+    if (data.includes("Delisting of")) {
+      const symbolMatch = data.match(/Delisting of (\w+)/);
+      console.log("Symbol match:", symbolMatch);
+      if (symbolMatch) {
+        const symbol = symbolMatch[1];
+        placeOrder({
+          symbol: symbol,
+          signal: "Sell",
+          price: "2",
+        });
+      }
+    }
+  }
+
+  res.status(204).send();
+});
+
 // Start the server
 const PORT = process.env.PORT || 7777;
 app.listen(PORT, () => {
