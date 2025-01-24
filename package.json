@@ -1,5 +1,5 @@
 {
-  "name": "my-trading-bot",
+  "name": "delist-bybit",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -11,11 +11,14 @@
   "license": "ISC",
   "description": "Desc",
   "dependencies": {
+    "axios": "^1.7.9",
     "bybit-api": "^3.10.25",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "googleapis": "^144.0.0",
     "input": "^1.0.1",
-    "mtproto-storage-fs": "^0.3.1"
+    "mtproto-storage-fs": "^0.3.1",
+    "telegram": "^2.26.16"
   },
   "engines": {
     "node": "20.x"
