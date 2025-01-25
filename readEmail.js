@@ -67,6 +67,24 @@ function getAccessToken(oAuth2Client, callback) {
   });
 }
 
+function watchGmail(auth) {
+  const gmail = google.gmail({ version: "v1", auth });
+  gmail.users.watch(
+    {
+      userId: "me",
+      requestBody: {
+        topicName: "projects/trading-email-448821/topics/delist-email",
+        labelIds: ["INBOX"],
+        labelFilterBehavior: "INCLUDE",
+      },
+    },
+    (err, res) => {
+      if (err) return console.error("Error setting up watch:", err);
+      console.log("Watch set up successfully:", res.data);
+    }
+  );
+}
+
 function listMessages(auth) {
   const gmail = google.gmail({ version: "v1", auth });
   gmail.users.messages.list(
@@ -122,7 +140,7 @@ function getMessage(auth, messageId) {
   );
 }
 
-// Call the authorize function with the parsed credentials and listMessages as the callback
-authorize(credentialsJson, listMessages);
+// Call the authorize function with the parsed credentials and watchGmail as the callback
+authorize(credentialsJson, watchGmail);
 
 module.exports = { listMessages };
