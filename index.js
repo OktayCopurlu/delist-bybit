@@ -24,8 +24,9 @@ app.post("/webhook", async (req, res) => {
   console.log("Received webhook:", rawBody);
 
   try {
-    const data = Buffer.from(rawBody, "base64").toString("utf-8");
-    console.log("Received message:", data);
+    const parsedMessage = JSON.parse(rawBody);
+    const data = Buffer.from(parsedMessage.data, "base64").toString("utf-8");
+    console.log("Received message:", [data]);
 
     // Process the message data
     if (data.includes("Delisting of")) {
