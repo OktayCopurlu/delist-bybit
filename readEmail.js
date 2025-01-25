@@ -23,9 +23,6 @@ credentials = credentials
 
 const credentialsJson = JSON.parse(credentials);
 
-// Now you can use credentialsJson as needed
-console.log(credentialsJson);
-
 function authorize(credentials, callback) {
   const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
@@ -67,39 +64,19 @@ function getAccessToken(oAuth2Client, callback) {
   });
 }
 
-function watchGmail(auth) {
-  const gmail = google.gmail({ version: "v1", auth });
-  gmail.users.watch(
-    {
-      userId: "me",
-      requestBody: {
-        topicName: "projects/trading-email-448821/topics/delist-email",
-        labelIds: ["INBOX"],
-        labelFilterBehavior: "INCLUDE",
-      },
-    },
-    (err, res) => {
-      if (err) return console.error("Error setting up watch:", err);
-      console.log("Watch set up successfully:", res.data);
-    }
-  );
-}
-
 function listMessages(auth) {
   const gmail = google.gmail({ version: "v1", auth });
   gmail.users.messages.list(
     {
       userId: "me",
-      maxResults: 10,
+      maxResults: 5,
       q: "category:primary", // Only fetch emails from the primary inbox
     },
     (err, res) => {
       if (err) return console.log("The API returned an error: " + err);
       const messages = res.data.messages;
       if (messages && messages.length) {
-        console.log("Messages:");
         messages.forEach((message) => {
-          console.log(`- ${message.id}`);
           getMessage(auth, message.id);
         });
       } else {
@@ -140,7 +117,23 @@ function getMessage(auth, messageId) {
   );
 }
 
-// Call the authorize function with the parsed credentials and watchGmail as the callback
+function watchGmail(auth) {
+  const gmail = google.gmail({ version: "v1", auth });
+  gmail.users.watch(
+    {
+      userId: "me",
+      requestBody: {
+        topicName: "projects/trading-email-448821/topics/delist-email",
+        labelIds: ["INBOX"],
+        labelFilterBehavior: "INCLUDE",
+      },
+    },
+    (err, res) => {
+      if (err) return console.error("Error setting up watch:", err);
+      console.log("Watch set up successfully:", res.data);
+    }
+  );
+}
 authorize(credentialsJson, watchGmail);
 
-module.exports = { listMessages };
+module.exports = { credentialsJson, authorize, listMessages };
