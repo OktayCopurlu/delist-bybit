@@ -15,15 +15,19 @@ const bybitClient = new RestClientV5({
 
 // Express server for webhook
 const app = express();
-// app.use(express.json());
-app.use(bodyParser.raw({ type: "application/json" }));
+
+// Middleware to parse JSON body
+app.use(express.json());
 
 app.post("/webhook", async (req, res) => {
-  const message = req.body.toString("utf-8"); // Convert raw body to string
-  console.log("Received webhook:", message);
+  console.log("Received webhook:", req.body);
 
   try {
-    const parsedMessage = JSON.parse(message);
+    if (!req.body || !req.body.message || !req.body.message.data) {
+      throw new Error("Invalid webhook payload");
+    }
+
+    const parsedMessage = req.body;
     const data = Buffer.from(parsedMessage.message.data, "base64").toString(
       "utf-8"
     );
