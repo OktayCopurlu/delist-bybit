@@ -17,8 +17,8 @@ const app = express();
 app.use(express.json());
 
 app.post("/webhook", async (req, res) => {
-  const message = req;
-  console.log("Received webhook:", message);
+  const message = req.body.message;
+  console.log("Received webhook:", req);
 
   if (message) {
     const data = Buffer.from(message.data, "base64").toString("utf-8");
@@ -46,6 +46,10 @@ app.post("/webhook", async (req, res) => {
   }
 
   res.status(204).send();
+});
+
+app.get("/", (req, res) => {
+  res.send("Running....");
 });
 
 // Start the server
