@@ -21,10 +21,11 @@ app.use(bodyParser.raw({ type: "application/json" }));
 
 app.post("/webhook", async (req, res) => {
   const rawBody = req.body.toString("utf-8"); // Convert raw body to string
+  console.log("Received webhook:", rawBody);
 
   try {
     const parsedMessage = JSON.parse(rawBody);
-    console.log(" webhook:", parsedMessage.message.data);
+    console.log("Parsed message:", parsedMessage);
     const data = Buffer.from(parsedMessage.message.data, "base64").toString(
       "utf-8"
     );
