@@ -30,11 +30,12 @@ app.post("/webhook", async (req, res) => {
     const data = Buffer.from(parsedMessage.message.data, "base64").toString(
       "utf-8"
     );
-    console.log("Received message:", data);
+    const messageContent = JSON.parse(data); // Parse the JSON content
+    console.log("Received message:", messageContent);
 
     // Process the message data
-    if (data.includes("Delisting of")) {
-      const symbolMatch = data.match(/Delisting of (\w+)/);
+    if (messageContent.includes("Delisting of")) {
+      const symbolMatch = messageContent.match(/Delisting of (\w+)/);
       console.log("Symbol match:", symbolMatch);
       if (symbolMatch) {
         const symbol = `${symbolMatch[1]}USDT`;
