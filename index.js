@@ -21,7 +21,9 @@ app.use(bodyParser.raw({ type: "application/json" }));
 
 app.post("/webhook", async (req, res) => {
   const rawBody = req.body.toString("utf-8"); // Convert raw body to string
-  console.log("Received webhook:", rawBody);
+  const jsonString = JSON.stringify(rawBody, null, 2); // 2 boşluk ile daha okunabilir hale getirir
+
+  console.log("Received webhook:", jsonString);
 
   try {
     const parsedMessage = JSON.parse(rawBody);
