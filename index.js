@@ -4,6 +4,7 @@ require("dotenv").config();
 const { listMessages } = require("./readEmail");
 const { placeOrder } = require("./placeOrder");
 const { BYBIT_API_KEY, BYBIT_API_SECRET, useTestnet } = require("./constants");
+const bodyParser = require("body-parser");
 
 // Bybit client
 const bybitClient = new RestClientV5({
@@ -14,35 +15,36 @@ const bybitClient = new RestClientV5({
 
 // Express server for webhook
 const app = express();
-app.use(express.json());
+// app.use(express.json());
+app.use(bodyParser.raw({ type: "application/json" }));
 
 app.post("/webhook", async (req, res) => {
-  const message = req.body.message;
-  console.log("Received webhook:", req);
+  const message = req.body.toString("utf-8"); // Convert raw body to string
+  console.log("Received webhook:", message);
 
-  if (message) {
-    const data = Buffer.from(message.data, "base64").toString("utf-8");
+  try {
+    const parsedMessage = JSON.parse(message);
+    const data = Buffer.from(parsedMessage.message.data, "base64").toString(
+      "utf-8"
+    );
     console.log("Received message:", data);
 
     // Process the message data
-    // For example, check for "Delisting of" in the subject and place an order
     if (data.includes("Delisting of")) {
       const symbolMatch = data.match(/Delisting of (\w+)/);
       console.log("Symbol match:", symbolMatch);
       if (symbolMatch) {
         const symbol = `${symbolMatch[1]}USDT`;
-        try {
-          await placeOrder({
-            symbol: symbol,
-            signal: "Sell",
-            price: "2",
-          });
-          console.log(`Placed sell order for ${symbol}`);
-        } catch (error) {
-          console.error("Error placing order:", error);
-        }
+        await placeOrder({
+          symbol: symbol,
+          signal: "Sell",
+          price: "2",
+        });
+        console.log(`Placed sell order for ${symbol}`);
       }
     }
+  } catch (error) {
+    console.error("Error processing webhook:", error);
   }
 
   res.status(204).send();
