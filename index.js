@@ -21,12 +21,14 @@ app.use(bodyParser.raw({ type: "application/json" }));
 
 app.post("/webhook", async (req, res) => {
   const rawBody = req.body.toString("utf-8"); // Convert raw body to string
-  console.log("Received webhook:", rawBody);
 
   try {
     const parsedMessage = JSON.parse(rawBody);
-    const data = Buffer.from(parsedMessage.data, "base64").toString("utf-8");
-    console.log("Received message:", [data]);
+    console.log(" webhook:", parsedMessage.message.data);
+    const data = Buffer.from(parsedMessage.message.data, "base64").toString(
+      "utf-8"
+    );
+    console.log("Received message:", data);
 
     // Process the message data
     if (data.includes("Delisting of")) {
