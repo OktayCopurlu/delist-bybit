@@ -4,7 +4,6 @@ require("dotenv").config();
 const { listMessages } = require("./readEmail");
 const { placeOrder } = require("./placeOrder");
 const { BYBIT_API_KEY, BYBIT_API_SECRET, useTestnet } = require("./constants");
-const bodyParser = require("body-parser");
 
 // Bybit client
 const bybitClient = new RestClientV5({
@@ -16,18 +15,18 @@ const bybitClient = new RestClientV5({
 // Express server for webhook
 const app = express();
 
-// Middleware to parse raw body
-app.use(bodyParser.raw({ type: "application/json" }));
+// Middleware to parse JSON body
+app.use(express.json());
 
 app.post("/webhook", async (req, res) => {
-  const rawBody = req.body.toString("utf-8"); // Convert raw body to string
-  const jsonString = JSON.stringify(rawBody, null, 2); // 2 boşluk ile daha okunabilir hale getirir
-
-  console.log("Received webhook:", jsonString);
+  console.log("Received webhook:", req.body);
 
   try {
-    const parsedMessage = JSON.parse(rawBody);
-    console.log("Parsed message:", parsedMessage);
+    if (!req.body || !req.body.message || !req.body.message.data) {
+      throw new Error("Invalid webhook payload");
+    }
+
+    const parsedMessage = req.body;
     const data = Buffer.from(parsedMessage.message.data, "base64").toString(
       "utf-8"
     );
