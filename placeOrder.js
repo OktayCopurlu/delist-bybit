@@ -1,7 +1,14 @@
-const { totalMarginSize, targetLeverage } = require("./constants");
+const {
+  totalMarginSize,
+  targetLeverage,
+  SHORT_TAKE_PROFIT_1,
+  SHORT_TAKE_PROFIT_2,
+  SHORT_STOP_LOSS,
+} = require("./constants");
 const { bybitClient } = require("./config");
 
 async function placeOrder(signal) {
+  console.log(signal);
   try {
     const side = signal.signal;
 
@@ -89,14 +96,76 @@ async function placeOrder(signal) {
       qty: calculatedQuantity,
       price: limitPrice,
     });
-    console.log("response", response);
+
     if (response.retCode !== 0) {
       return `Order rejected: ${response.retMsg}`;
     } else {
-      addSymbolToJson(signal.symbol);
       console.log(
         `Order placed: ${signal.symbol} ${side}, Quantity: ${calculatedQuantity}, Price: ${limitPrice}`
       );
+
+      const takeProfitPrice1 = (symbolPrice * SHORT_TAKE_PROFIT_1).toFixed(4); // %10 aşağı fiyat
+      const takeProfitPrice2 = (symbolPrice * SHORT_TAKE_PROFIT_2).toFixed(4); // %20 aşağı fiyat
+      const stopLossPrice = (symbolPrice * SHORT_STOP_LOSS).toFixed(4); // %1 yukarı fiyat
+      const takeProfitQuantity1 = (calculatedQuantity * 0.5).toFixed(
+        qtyPrecision
+      );
+      const takeProfitQuantity2 = (takeProfitQuantity1 * 0.5).toFixed(
+        qtyPrecision
+      );
+
+      const position = await bybitClient.getPositionInfo({
+        category: "linear",
+        symbol: signal.symbol,
+      });
+
+      if (position.retCode !== 0) {
+        return `Failed to close position: ${position.retMsg}`;
+      }
+
+      const takeProfitPoints = [takeProfitPrice1, takeProfitPrice2];
+      const takeProfitSizes = [takeProfitQuantity1, takeProfitQuantity2];
+
+      if (position.result.list[0].size > 0) {
+        for (let i = 0; i < takeProfitPoints.length; i++) {
+          const takeProfitPrice = takeProfitPoints[i];
+          const takeProfitQuantity = takeProfitSizes[i];
+
+          const takeProfitResponse = await bybitClient.setTradingStop({
+            category: "linear",
+            symbol: signal.symbol,
+            takeProfit: takeProfitPrice,
+            tpTriggerBy: "MarkPrice",
+            tpslMode: "Partial",
+            tpOrderType: "Limit",
+            tpSize: takeProfitQuantity,
+            tpLimitPrice: takeProfitPrice,
+            positionIdx: 0,
+          });
+
+          if (takeProfitResponse.retCode !== 0) {
+            console.log(`Take profit rejected: ${takeProfitResponse.retMsg}`);
+          } else {
+            console.log(
+              `Take profit order placed: ${signal.symbol} ${takeProfitQuantity} at ${takeProfitPrice}`
+            );
+          }
+        }
+
+        // Create Stop Loss order
+        const stopLossResponse = await bybitClient.setTradingStop({
+          category: "linear",
+          symbol: signal.symbol,
+          stopLoss: stopLossPrice,
+          slTriggerBy: "MarkPrice",
+        });
+
+        if (stopLossResponse.retCode !== 0) {
+          return `Stop Loss rejected: ${stopLossResponse.retMsg}`;
+        } else {
+          return `Stop Loss set for ${signal.symbol} at ${stopLossPrice}`;
+        }
+      }
     }
   } catch (error) {
     return `An error occurred while placing the order: ${JSON.stringify(
