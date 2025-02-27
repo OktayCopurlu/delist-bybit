@@ -18,17 +18,22 @@ async function placeOrder(signal) {
       symbol: signal.symbol,
     });
 
+    console.log("Market Price Data:", marketPriceData);
+
     if (marketPriceData.retCode !== 0) {
       return `Failed to get tickers : ${marketPriceData.retMsg}`;
     }
 
     const symbolPrice = parseFloat(marketPriceData.result.list[0].lastPrice);
+    console.log("Symbol Price:", symbolPrice);
 
     // If data not found in JSON, fetch from API
     const instrumentDetails = await bybitClient.getInstrumentsInfo({
       category: "linear",
       symbol: signal.symbol,
     });
+
+    console.log("Instrument Details:", instrumentDetails);
 
     if (instrumentDetails.retCode !== 0) {
       return `Failed to get Instruments Info : ${instrumentDetails.retMsg}`;
@@ -40,12 +45,17 @@ async function placeOrder(signal) {
     );
     const tickSize = parseFloat(instrument.priceFilter.tickSize);
 
+    console.log("Quantity Precision:", qtyPrecision);
+    console.log("Tick Size:", tickSize);
+
     // Calculate the correct quantity for the target leverage
     const targetNotional = totalMarginSize * targetLeverage;
     let calculatedQuantity = (targetNotional / symbolPrice).toFixed(
       qtyPrecision
     );
     calculatedQuantity = Math.max(calculatedQuantity, 1).toFixed(qtyPrecision);
+
+    console.log("Calculated Quantity:", calculatedQuantity);
 
     // Calculate limit price
     const priceOffset = parseFloat(tickSize) * 5;
@@ -54,15 +64,21 @@ async function placeOrder(signal) {
         ? (symbolPrice - priceOffset).toFixed(4)
         : (symbolPrice + priceOffset).toFixed(4);
 
+    console.log("Limit Price:", limitPrice);
+
     // Check for existing positions
     const openPositions = await bybitClient.getPositionInfo({
       category: "linear",
       symbol: signal.symbol,
     });
 
+    console.log("Open Positions:", openPositions);
+
     if (openPositions.result) {
       const openPosition = openPositions.result.list[0];
       const openPositionSide = openPosition.side;
+
+      console.log("Open Position Side:", openPositionSide);
 
       if (openPositionSide !== side) {
         if (openPositionSide !== "") {
@@ -74,6 +90,8 @@ async function placeOrder(signal) {
             qty: openPosition.size,
             timeInForce: "GoodTillCancel",
           });
+
+          console.log("Order Response for Closing Position:", orderResponse);
 
           if (orderResponse.retCode !== 0) {
             return `Failed to close position: ${orderResponse.retMsg}`;
@@ -97,6 +115,8 @@ async function placeOrder(signal) {
       price: limitPrice,
     });
 
+    console.log("Order Response for New Order:", response);
+
     if (response.retCode !== 0) {
       return `Order rejected: ${response.retMsg}`;
     } else {
@@ -114,10 +134,20 @@ async function placeOrder(signal) {
         qtyPrecision
       );
 
+      console.log("Take Profit Prices:", takeProfitPrice1, takeProfitPrice2);
+      console.log("Stop Loss Price:", stopLossPrice);
+      console.log(
+        "Take Profit Quantities:",
+        takeProfitQuantity1,
+        takeProfitQuantity2
+      );
+
       const position = await bybitClient.getPositionInfo({
         category: "linear",
         symbol: signal.symbol,
       });
+
+      console.log("Position Info:", position);
 
       if (position.retCode !== 0) {
         return `Failed to close position: ${position.retMsg}`;
@@ -143,6 +173,8 @@ async function placeOrder(signal) {
             positionIdx: 0,
           });
 
+          console.log("Take Profit Response:", takeProfitResponse);
+
           if (takeProfitResponse.retCode !== 0) {
             console.log(`Take profit rejected: ${takeProfitResponse.retMsg}`);
           } else {
@@ -160,6 +192,8 @@ async function placeOrder(signal) {
           slTriggerBy: "MarkPrice",
         });
 
+        console.log("Stop Loss Response:", stopLossResponse);
+
         if (stopLossResponse.retCode !== 0) {
           return `Stop Loss rejected: ${stopLossResponse.retMsg}`;
         } else {
@@ -168,6 +202,9 @@ async function placeOrder(signal) {
       }
     }
   } catch (error) {
+    console.log(
+      `An error occurred while placing the order: ${JSON.stringify(error)}`
+    );
     return `An error occurred while placing the order: ${JSON.stringify(
       error
     )}`;
